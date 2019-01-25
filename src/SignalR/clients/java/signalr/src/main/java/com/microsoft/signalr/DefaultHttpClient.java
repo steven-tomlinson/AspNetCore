@@ -137,7 +137,6 @@ final class DefaultHttpClient extends HttpClient {
         return responseSubject;
     }
 
-
     @Override
     public WebSocketWrapper createWebSocket(String url, Map<String, String> headers) {
         return new OkHttpWebSocketWrapper(url, headers, client);

@@ -4,8 +4,6 @@
 package com.microsoft.signalr;
 
 import io.reactivex.Completable;
-import okhttp3.Headers;
-import okhttp3.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,7 +15,7 @@ public class LongPollingTransport implements Transport {
     private String url;
     private final HttpClient client;
     private final Map<String, String> headers;
-    private Boolean active;
+    private volatile Boolean active;
     private String pollUrl;
     private final Logger logger = LoggerFactory.getLogger(LongPollingTransport.class);
 
@@ -75,8 +73,7 @@ public class LongPollingTransport implements Transport {
 
     @Override
     public Completable send(String message) {
-        this.client.post(url, message).blockingGet();
-        return Completable.complete();
+        return Completable.fromSingle(this.client.post(url, message));
     }
 
     @Override
