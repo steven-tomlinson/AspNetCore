@@ -65,7 +65,7 @@ public class LongPollingTransport implements Transport {
                 this.active = false;
             } else {
                 logger.info("Message received");
-                this.onReceive(response.getContent());
+                new Thread(() -> this.onReceive(response.getContent())).start();
             }
         }
         return Completable.complete();
