@@ -14,6 +14,7 @@ public class LongPollingTransport implements Transport {
     private TransportOnClosedCallback onClose;
     private String url;
     private final HttpClient client;
+    private final HttpClient pollingClient = new DefaultHttpClient(100*1000);
     private final Map<String, String> headers;
     private volatile Boolean active;
     private String pollUrl;
@@ -54,7 +55,7 @@ public class LongPollingTransport implements Transport {
             logger.info("Polling {}", pollUrl);
             HttpRequest request = new HttpRequest();
             request.addHeaders(headers);
-            HttpResponse response = this.client.get(pollUrl).blockingGet();
+            HttpResponse response = this.pollingClient.get(pollUrl).blockingGet();
             response.getStatusCode();
 
             if (response.getStatusCode() == 204) {
