@@ -17,6 +17,7 @@
       MicrosoftEntityFrameworkCoreToolsPackageVersion=$(MicrosoftEntityFrameworkCoreToolsPackageVersion);
       MicrosoftNETCoreAppPackageVersion=$(MicrosoftNETCoreAppPackageVersion);
       MicrosoftNETSdkRazorPackageVersion=$(MicrosoftNETSdkRazorPackageVersion);
+      MicrosoftWebLibraryManagerBuildPackageVersion=$(MicrosoftWebLibraryManagerBuildPackageVersion);
     </GeneratedContentProperties>
   </PropertyGroup>
 
