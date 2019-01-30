@@ -40,8 +40,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
             var scope = _scopeFactory.CreateScope();
             var jsRuntime = new RemoteJSRuntime(client);
             var rendererRegistry = new RendererRegistry();
-            var synchronizationContext = new CircuitSynchronizationContext();
-            var renderer = new RemoteRenderer(scope.ServiceProvider, rendererRegistry, jsRuntime, client, synchronizationContext);
+            var renderer = new RemoteRenderer(scope.ServiceProvider, rendererRegistry, jsRuntime, client);
 
             var circuitHost = new CircuitHost(
                 scope,
@@ -49,8 +48,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
                 rendererRegistry,
                 renderer,
                 config,
-                jsRuntime,
-                synchronizationContext);
+                jsRuntime);
 
             // Initialize per-circuit data that services need
             (circuitHost.Services.GetRequiredService<IJSRuntimeAccessor>() as DefaultJSRuntimeAccessor).JSRuntime = jsRuntime;

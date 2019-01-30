@@ -52,8 +52,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
             RendererRegistry rendererRegistry,
             RemoteRenderer renderer,
             Action<IComponentsApplicationBuilder> configure,
-            IJSRuntime jsRuntime,
-            CircuitSynchronizationContext synchronizationContext)
+            IJSRuntime jsRuntime)
         {
             Scope = scope ?? throw new ArgumentNullException(nameof(scope));
             Client = client ?? throw new ArgumentNullException(nameof(client));
@@ -61,14 +60,13 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
             Renderer = renderer ?? throw new ArgumentNullException(nameof(renderer));
             _configure = configure ?? throw new ArgumentNullException(nameof(configure));
             JSRuntime = jsRuntime ?? throw new ArgumentNullException(nameof(jsRuntime));
-            SynchronizationContext = synchronizationContext ?? throw new ArgumentNullException(nameof(synchronizationContext));
 
             Services = scope.ServiceProvider;
 
             Circuit = new Circuit(this);
 
             Renderer.UnhandledException += Renderer_UnhandledException;
-            SynchronizationContext.UnhandledException += SynchronizationContext_UnhandledException;
+            Renderer.SyncContext.UnhandledException += SynchronizationContext_UnhandledException;
         }
 
         public Circuit Circuit { get; }
@@ -85,11 +83,9 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
 
         public IServiceProvider Services { get; }
 
-        public CircuitSynchronizationContext SynchronizationContext { get; }
-
         public async Task InitializeAsync()
         {
-            await SynchronizationContext.Invoke(() =>
+            await Renderer.Invoke(() =>
             {
                 SetCurrentCircuitHost(this);
 
@@ -113,11 +109,11 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
 
             try
             {
-                await SynchronizationContext.Invoke(() =>
+                await Renderer.Invoke(() =>
                 {
                     SetCurrentCircuitHost(this);
-
-                    DotNetDispatcher.BeginInvoke(callId, assemblyName, methodIdentifier, dotNetObjectId, argsJson);
+                    
+                    DotNetDispatcher.Invoke(assemblyName, methodIdentifier, dotNetObjectId, argsJson);
                 });
             }
             catch (Exception ex)

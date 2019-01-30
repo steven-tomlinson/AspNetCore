@@ -23,16 +23,14 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
             var clientProxy = Mock.Of<IClientProxy>();
             var renderRegistry = new RendererRegistry();
             var jsRuntime = Mock.Of<IJSRuntime>();
-            var syncContext = new CircuitSynchronizationContext();
 
             var remoteRenderer = new TestRemoteRenderer(
                 Mock.Of<IServiceProvider>(),
                 renderRegistry,
                 jsRuntime,
-                clientProxy,
-                syncContext);
+                clientProxy);
 
-            var circuitHost = new CircuitHost(serviceScope.Object, clientProxy, renderRegistry, remoteRenderer, configure: _ => { }, jsRuntime: jsRuntime, synchronizationContext: syncContext);
+            var circuitHost = new CircuitHost(serviceScope.Object, clientProxy, renderRegistry, remoteRenderer, configure: _ => { }, jsRuntime: jsRuntime);
 
             // Act
             circuitHost.Dispose();
@@ -44,8 +42,8 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
 
         private class TestRemoteRenderer : RemoteRenderer
         {
-            public TestRemoteRenderer(IServiceProvider serviceProvider, RendererRegistry rendererRegistry, IJSRuntime jsRuntime, IClientProxy client, SynchronizationContext syncContext)
-                : base(serviceProvider, rendererRegistry, jsRuntime, client, syncContext)
+            public TestRemoteRenderer(IServiceProvider serviceProvider, RendererRegistry rendererRegistry, IJSRuntime jsRuntime, IClientProxy client)
+                : base(serviceProvider, rendererRegistry, jsRuntime, client)
             {
             }
 

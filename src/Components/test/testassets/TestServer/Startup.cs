@@ -48,6 +48,7 @@ namespace TestServer
                 // swap in UseAzureSignalR instead of UseSignalR).
                 subdirApp.UseSignalR(route => route.MapHub<BlazorHub>(BlazorHub.DefaultPath));
                 subdirApp.UseBlazor<BasicTestApp.Startup>();
+                //subdirApp.UseRazorComponents<BasicTestApp.Startup>();
             });
         }
 
