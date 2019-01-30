@@ -90,16 +90,6 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public void CanGetNewSpanWhenNoAdvanceWhenSizeTooLarge()
-        {
-            var span = Writer.GetSpan(0);
-
-            var secondSpan = Writer.GetSpan(10000);
-
-            Assert.False(span.SequenceEqual(secondSpan));
-        }
-
-        [Fact]
         public void CanGetSameSpanWhenNoAdvance()
         {
             var span = Writer.GetSpan(0);
