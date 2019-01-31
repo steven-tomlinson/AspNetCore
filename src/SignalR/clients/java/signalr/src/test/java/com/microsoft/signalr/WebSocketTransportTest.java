@@ -52,7 +52,7 @@ class WebSocketTransportTest {
         }
 
         @Override
-        public HttpClient clonewithTimeOut(int timeoutInMiliseconds) {
+        public HttpClient cloneWithTimeOut(int timeoutInMiliseconds) {
             return null;
         }
     }

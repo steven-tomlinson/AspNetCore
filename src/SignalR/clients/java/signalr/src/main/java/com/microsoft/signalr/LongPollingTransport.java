@@ -25,7 +25,7 @@ class LongPollingTransport implements Transport {
     public LongPollingTransport(Map<String, String> headers, HttpClient client) {
         this.headers = headers;
         this.client = client;
-        this.pollingClient = client.clonewithTimeOut(POLL_TIMEOUT);
+        this.pollingClient = client.cloneWithTimeOut(POLL_TIMEOUT);
     }
 
     @Override
