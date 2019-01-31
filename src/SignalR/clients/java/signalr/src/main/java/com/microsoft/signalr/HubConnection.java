@@ -332,6 +332,7 @@ public class HubConnection {
                             hubConnectionState = HubConnectionState.CONNECTED;
                             logger.info("HubConnection started.");
                             resetServerTimeout();
+                            //Don't send pings if we're using long polling.
                             if(transportEnum != TransportEnum.LONG_POLLING) {
                                 this.pingTimer = new Timer();
                                 this.pingTimer.schedule(new TimerTask() {
@@ -355,7 +356,6 @@ public class HubConnection {
                                     }
                                 }, new Date(0), tickRate);
                             }
-
                         } finally {
                             hubConnectionStateLock.unlock();
                         }

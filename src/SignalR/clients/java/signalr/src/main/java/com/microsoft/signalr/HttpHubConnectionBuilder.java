@@ -32,7 +32,7 @@ public class HttpHubConnectionBuilder {
     }
 
     /**
-     * Sets the transport to be used by the {@link HubConnection}.
+     * Sets the transport type to indicate which transport to be used by the {@link HubConnection}.
      *
      * @param transportEnum The type of transport to be used.
      * @return This instance of the HttpHubConnectionBuilder.

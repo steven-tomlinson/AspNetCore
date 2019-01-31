@@ -126,4 +126,6 @@ abstract class HttpClient {
     public abstract Single<HttpResponse> send(HttpRequest request, String body);
 
     public abstract WebSocketWrapper createWebSocket(String url, Map<String, String> headers);
+
+    public abstract HttpClient clonewithTimeOut(int timeoutInMiliseconds);
 }

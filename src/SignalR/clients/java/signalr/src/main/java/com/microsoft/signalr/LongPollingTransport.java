@@ -4,18 +4,20 @@
 package com.microsoft.signalr;
 
 import io.reactivex.Completable;
+import io.reactivex.Single;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
-public class LongPollingTransport implements Transport {
+class LongPollingTransport implements Transport {
     private OnReceiveCallBack onReceiveCallBack;
     private TransportOnClosedCallback onClose;
     private String url;
     private final HttpClient client;
-    private final HttpClient pollingClient = new DefaultHttpClient(100*1000);
+    private final HttpClient pollingClient;
     private final Map<String, String> headers;
+    private static final int POLL_TIMEOUT = 100*1000;
     private volatile Boolean active;
     private String pollUrl;
     private final Logger logger = LoggerFactory.getLogger(LongPollingTransport.class);
@@ -23,6 +25,7 @@ public class LongPollingTransport implements Transport {
     public LongPollingTransport(Map<String, String> headers, HttpClient client) {
         this.headers = headers;
         this.client = client;
+        this.pollingClient = client.clonewithTimeOut(POLL_TIMEOUT);
     }
 
     @Override
@@ -34,30 +37,29 @@ public class LongPollingTransport implements Transport {
         logger.info("Polling {}", pollUrl);
         HttpRequest request = new HttpRequest();
         request.addHeaders(headers);
-        HttpResponse response = this.client.get(pollUrl, request).blockingGet();
-        if (response.getStatusCode() != 200){
-            logger.error("Unexpected response code {}", response.getStatusCode());
-            this.active = false;
-            return Completable.error(new Exception("Failed to connect"));
-        } else {
-            this.active = true;
-        }
+        return this.pollingClient.get(pollUrl, request).flatMapCompletable(response -> {
+            if (response.getStatusCode() != 200){
+                logger.error("Unexpected response code {}", response.getStatusCode());
+                this.active = false;
+                return Completable.error(new Exception("Failed to connect"));
+            } else {
+                logger.info("Activating poll loop", response.getStatusCode());
+                this.active = true;
+            }
 
-        new Thread(() -> poll(url)).start();
+            new Thread(() -> poll(url)).start();
 
-        return Completable.complete();
+            return Completable.complete();
+        });
     }
 
-    private Completable poll(String url){
-        while(this.active){
-            // Poll
+    private Single poll(String url){
+        while (this.active){
             pollUrl = url + "&_=" + System.currentTimeMillis();
             logger.info("Polling {}", pollUrl);
             HttpRequest request = new HttpRequest();
             request.addHeaders(headers);
-            HttpResponse response = this.pollingClient.get(pollUrl).blockingGet();
-            response.getStatusCode();
-
+            HttpResponse response = this.pollingClient.get(pollUrl, request).blockingGet();
             if (response.getStatusCode() == 204) {
                 logger.info("LongPolling transport terminated by server.");
                 this.active = false;
@@ -68,8 +70,20 @@ public class LongPollingTransport implements Transport {
                 logger.info("Message received");
                 new Thread(() -> this.onReceive(response.getContent())).start();
             }
+            /**this.pollingClient.get(pollUrl, request).flatMap(response -> {
+                if (response.getStatusCode() == 204) {
+                    logger.info("LongPolling transport terminated by server.");
+                    this.active = false;
+                } else if (response.getStatusCode() != 200) {
+                    logger.error("Unexpected response code {}", response.getStatusCode());
+                    this.active = false;
+                } else {
+                    logger.info("Message received");
+                    new Thread(() -> this.onReceive(response.getContent())).start();
+                }
+                return poll(url); **/
         }
-        return Completable.complete();
+        return Single.just("");
     }
 
     @Override

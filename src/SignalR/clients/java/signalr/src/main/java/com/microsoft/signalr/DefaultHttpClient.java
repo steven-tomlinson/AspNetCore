@@ -17,63 +17,77 @@ import io.reactivex.subjects.SingleSubject;
 import okhttp3.*;
 
 final class DefaultHttpClient extends HttpClient {
-    private final OkHttpClient client;
+    private OkHttpClient client = null;
 
     public DefaultHttpClient() {
-        this(5000);
+        this(5*1000, null);
     }
 
-    public DefaultHttpClient(int pollTimeout) {
-        this.client = new OkHttpClient.Builder().cookieJar(new CookieJar() {
-            private List<Cookie> cookieList = new ArrayList<>();
-            private Lock cookieLock = new ReentrantLock();
+    public DefaultHttpClient clonewithTimeOut(int timeoutInMiliseconds) {
+        OkHttpClient newClient = client.newBuilder().readTimeout(timeoutInMiliseconds, TimeUnit.MILLISECONDS)
+                .build();
+        return new DefaultHttpClient(timeoutInMiliseconds, newClient);
+    }
 
-            @Override
-            public void saveFromResponse(HttpUrl url, List<Cookie> cookies) {
-                cookieLock.lock();
-                try {
-                    for (Cookie cookie : cookies) {
-                        boolean replacedCookie = false;
-                        for (int i = 0; i < cookieList.size(); i++) {
-                            Cookie innerCookie = cookieList.get(i);
-                            if (cookie.name().equals(innerCookie.name()) && innerCookie.matches(url)) {
-                                // We have a new cookie that matches an older one so we replace the older one.
-                                cookieList.set(i, innerCookie);
-                                replacedCookie = true;
-                                break;
+    public DefaultHttpClient(int timeoutInMiliseconds, OkHttpClient client) {
+        if (client != null) {
+            this.client = client;
+        } else {
+            this.client = new OkHttpClient.Builder().cookieJar(new CookieJar() {
+                private List<Cookie> cookieList = new ArrayList<>();
+                private Lock cookieLock = new ReentrantLock();
+
+                @Override
+                public void saveFromResponse(HttpUrl url, List<Cookie> cookies) {
+                    cookieLock.lock();
+                    try {
+                        for (Cookie cookie : cookies) {
+                            boolean replacedCookie = false;
+                            for (int i = 0; i < cookieList.size(); i++) {
+                                Cookie innerCookie = cookieList.get(i);
+                                if (cookie.name().equals(innerCookie.name()) && innerCookie.matches(url)) {
+                                    // We have a new cookie that matches an older one so we replace the older one.
+                                    cookieList.set(i, innerCookie);
+                                    replacedCookie = true;
+                                    break;
+                                }
+                            }
+                            if (!replacedCookie) {
+                                cookieList.add(cookie);
                             }
                         }
-                        if (!replacedCookie) {
-                            cookieList.add(cookie);
-                        }
+                    } finally {
+                        cookieLock.unlock();
                     }
-                } finally {
-                    cookieLock.unlock();
                 }
-            }
 
-            @Override
-            public List<Cookie> loadForRequest(HttpUrl url) {
-                cookieLock.lock();
-                try {
-                    List<Cookie> matchedCookies = new ArrayList<>();
-                    List<Cookie> expiredCookies = new ArrayList<>();
-                    for (Cookie cookie : cookieList) {
-                        if (cookie.expiresAt() < System.currentTimeMillis()) {
-                            expiredCookies.add(cookie);
-                        } else if (cookie.matches(url)) {
-                            matchedCookies.add(cookie);
+                @Override
+                public List<Cookie> loadForRequest(HttpUrl url) {
+                    cookieLock.lock();
+                    try {
+                        List<Cookie> matchedCookies = new ArrayList<>();
+                        List<Cookie> expiredCookies = new ArrayList<>();
+                        for (Cookie cookie : cookieList) {
+                            if (cookie.expiresAt() < System.currentTimeMillis()) {
+                                expiredCookies.add(cookie);
+                            } else if (cookie.matches(url)) {
+                                matchedCookies.add(cookie);
+                            }
                         }
-                    }
 
-                    cookieList.removeAll(expiredCookies);
-                    return matchedCookies;
-                } finally {
-                    cookieLock.unlock();
+                        cookieList.removeAll(expiredCookies);
+                        return matchedCookies;
+                    } finally {
+                        cookieLock.unlock();
+                    }
                 }
-            }
-        }).readTimeout(pollTimeout, TimeUnit.MILLISECONDS)
-                .build();
+            }).readTimeout(timeoutInMiliseconds, TimeUnit.MILLISECONDS)
+                    .build();
+        }
+    }
+
+    public DefaultHttpClient(int timeoutInMiliseonds) {
+
     }
 
     @Override

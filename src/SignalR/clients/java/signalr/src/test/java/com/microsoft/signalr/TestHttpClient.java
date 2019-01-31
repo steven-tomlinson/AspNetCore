@@ -71,6 +71,11 @@ class TestHttpClient extends HttpClient {
         throw new RuntimeException("WebSockets isn't supported in testing currently.");
     }
 
+    @Override
+    public HttpClient clonewithTimeOut(int timeoutInMiliseconds) {
+        return null;
+    }
+
     interface TestHttpRequestHandler {
         Single<HttpResponse> invoke(HttpRequest request);
     }

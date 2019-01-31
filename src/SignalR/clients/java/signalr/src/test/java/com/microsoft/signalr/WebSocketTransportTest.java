@@ -50,6 +50,11 @@ class WebSocketTransportTest {
         public WebSocketWrapper createWebSocket(String url, Map<String, String> headers) {
             return new TestWrapper();
         }
+
+        @Override
+        public HttpClient clonewithTimeOut(int timeoutInMiliseconds) {
+            return null;
+        }
     }
 
     class TestWrapper extends WebSocketWrapper {
