@@ -54,6 +54,7 @@
                       $(RepositoryRoot)src\Razor\Razor.Design\test\testassets\**\*.*proj;
                       $(RepositoryRoot)src\SignalR\clients\cpp\**\*.*proj;
                       $(RepositoryRoot)src\SignalR\clients\ts\**\node_modules\**\*.*proj;
+                      $(RepositoryRoot)src\SignalR\perf\benchmarkapps\**\*.csproj;
                       $(RepositoryRoot)src\Components\Blazor\Templates\src\content\**\*.*proj;
                       $(RepositoryRoot)src\ProjectTemplates\Web.ProjectTemplates\content\**\*.csproj;
                       $(RepositoryRoot)src\ProjectTemplates\Web.Spa.ProjectTemplates\content\**\*.csproj;
