@@ -5,6 +5,7 @@ package com.microsoft.signalr;
 
 import io.reactivex.Completable;
 import io.reactivex.Single;
+import io.reactivex.subjects.CompletableSubject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,24 +54,14 @@ class LongPollingTransport implements Transport {
         });
     }
 
-    private Single poll(String url){
-        while (this.active){
+    private Completable poll(String url){
+        if (this.active) {
             pollUrl = url + "&_=" + System.currentTimeMillis();
             logger.info("Polling {}", pollUrl);
             HttpRequest request = new HttpRequest();
             request.addHeaders(headers);
-            HttpResponse response = this.pollingClient.get(pollUrl, request).blockingGet();
-            if (response.getStatusCode() == 204) {
-                logger.info("LongPolling transport terminated by server.");
-                this.active = false;
-            } else if (response.getStatusCode() != 200) {
-                logger.error("Unexpected response code {}", response.getStatusCode());
-                this.active = false;
-            } else {
-                logger.info("Message received");
-                new Thread(() -> this.onReceive(response.getContent())).start();
-            }
-            /**this.pollingClient.get(pollUrl, request).flatMap(response -> {
+            CompletableSubject poll = CompletableSubject.create();
+            this.pollingClient.get(pollUrl, request).flatMapCompletable(response -> {
                 if (response.getStatusCode() == 204) {
                     logger.info("LongPolling transport terminated by server.");
                     this.active = false;
@@ -81,9 +72,9 @@ class LongPollingTransport implements Transport {
                     logger.info("Message received");
                     new Thread(() -> this.onReceive(response.getContent())).start();
                 }
-                return poll(url); **/
+                return poll(url); }).subscribeWith(poll);
         }
-        return Single.just("");
+        return Completable.complete();
     }
 
     @Override
