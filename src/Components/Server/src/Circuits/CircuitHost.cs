@@ -66,7 +66,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
             Circuit = new Circuit(this);
 
             Renderer.UnhandledException += Renderer_UnhandledException;
-            Renderer.SyncContext.UnhandledException += SynchronizationContext_UnhandledException;
+            Renderer.UnhandledSynchronizationException += SynchronizationContext_UnhandledException;
         }
 
         public Circuit Circuit { get; }
@@ -113,7 +113,7 @@ namespace Microsoft.AspNetCore.Components.Server.Circuits
                 {
                     SetCurrentCircuitHost(this);
                     
-                    DotNetDispatcher.Invoke(assemblyName, methodIdentifier, dotNetObjectId, argsJson);
+                    DotNetDispatcher.BeginInvoke(callId, assemblyName, methodIdentifier, dotNetObjectId, argsJson);
                 });
             }
             catch (Exception ex)
