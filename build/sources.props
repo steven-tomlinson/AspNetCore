@@ -25,7 +25,8 @@
       https://dotnet.myget.org/F/roslyn-tools/api/v3/index.json;
       https://vside.myget.org/F/vssdk/api/v3/index.json;
       https://vside.myget.org/F/vsmac/api/v3/index.json;
-      https://vside.myget.org/F/devcore/api/v3/index.json
+      https://vside.myget.org/F/devcore/api/v3/index.json;
+      C:\Users\brecon\Downloads\Release\Release
     </RestoreSources>
     <!-- Temporary until we can replace PackageRef with ProjectRef -->
     <RestoreSources Condition=" '$(SubFolderRepoBuild)' == 'true' AND '$(DotNetBuildOffline)' != 'true' AND '$(DisableMyGetRestoreSources)' != 'true' ">
