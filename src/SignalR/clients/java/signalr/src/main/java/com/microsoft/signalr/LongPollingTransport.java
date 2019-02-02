@@ -21,6 +21,8 @@ class LongPollingTransport implements Transport {
     private static final int POLL_TIMEOUT = 100*1000;
     private volatile Boolean active;
     private String pollUrl;
+    private String closeError;
+    private CompletableSubject pollCompletable = CompletableSubject.create();
     private final Logger logger = LoggerFactory.getLogger(LongPollingTransport.class);
 
     public LongPollingTransport(Map<String, String> headers, HttpClient client) {
@@ -47,8 +49,7 @@ class LongPollingTransport implements Transport {
                 logger.info("Activating poll loop", response.getStatusCode());
                 this.active = true;
             }
-
-            new Thread(() -> poll(url)).start();
+            poll(url).subscribeWith(pollCompletable);
 
             return Completable.complete();
         });
@@ -60,20 +61,25 @@ class LongPollingTransport implements Transport {
             logger.info("Polling {}", pollUrl);
             HttpRequest request = new HttpRequest();
             request.addHeaders(headers);
-            CompletableSubject poll = CompletableSubject.create();
-            this.pollingClient.get(pollUrl, request).flatMapCompletable(response -> {
+            Completable pollingCompletable = this.pollingClient.get(pollUrl, request).flatMapCompletable(response -> {
                 if (response.getStatusCode() == 204) {
                     logger.info("LongPolling transport terminated by server.");
                     this.active = false;
                 } else if (response.getStatusCode() != 200) {
                     logger.error("Unexpected response code {}", response.getStatusCode());
                     this.active = false;
+                    this.closeError = "Unexpected response code {}" + response.getStatusCode();
                 } else {
                     logger.info("Message received");
                     new Thread(() -> this.onReceive(response.getContent())).start();
                 }
-                return poll(url); }).subscribeWith(poll);
+                return poll(url); });
+            return pollingCompletable;
+        } else {
+            logger.info("Long Polling transport polling complete.");
+            this.onClose.invoke(this.closeError);
         }
+
         return Completable.complete();
     }
 
@@ -100,9 +106,10 @@ class LongPollingTransport implements Transport {
 
     @Override
     public Completable stop() {
-        logger.info("LongPolling transport stopped.");
         this.active = false;
-        this.client.delete(this.url);
+        this.pollingClient.delete(this.url);
+        this.pollCompletable.blockingAwait();
+        logger.info("LongPolling transport stopped.");
         this.onClose.invoke(null);
         return Completable.complete();
     }
