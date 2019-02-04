@@ -20,13 +20,13 @@ final class DefaultHttpClient extends HttpClient {
     private OkHttpClient client = null;
 
     public DefaultHttpClient() {
-        this(5*1000, null);
+        this(5000, null);
     }
 
-    public DefaultHttpClient cloneWithTimeOut(int timeoutInMiliseconds) {
-        OkHttpClient newClient = client.newBuilder().readTimeout(timeoutInMiliseconds, TimeUnit.MILLISECONDS)
+    public DefaultHttpClient cloneWithTimeOut(int timeoutInMilliseconds) {
+        OkHttpClient newClient = client.newBuilder().readTimeout(timeoutInMilliseconds, TimeUnit.MILLISECONDS)
                 .build();
-        return new DefaultHttpClient(timeoutInMiliseconds, newClient);
+        return new DefaultHttpClient(timeoutInMilliseconds, newClient);
     }
 
     public DefaultHttpClient(int timeoutInMiliseconds, OkHttpClient client) {
