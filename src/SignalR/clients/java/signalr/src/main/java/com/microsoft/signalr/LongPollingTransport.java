@@ -4,7 +4,6 @@
 package com.microsoft.signalr;
 
 import io.reactivex.Completable;
-import io.reactivex.Single;
 import io.reactivex.subjects.CompletableSubject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +21,7 @@ class LongPollingTransport implements Transport {
     private volatile Boolean active;
     private String pollUrl;
     private String closeError;
-    private CompletableSubject pollCompletable = CompletableSubject.create();
+    private CompletableSubject pollCompletableSubject = CompletableSubject.create();
     private final Logger logger = LoggerFactory.getLogger(LongPollingTransport.class);
 
     public LongPollingTransport(Map<String, String> headers, HttpClient client) {
@@ -49,7 +48,7 @@ class LongPollingTransport implements Transport {
                 logger.info("Activating poll loop", response.getStatusCode());
                 this.active = true;
             }
-            poll(url).subscribeWith(pollCompletable);
+            poll(url).subscribeWith(pollCompletableSubject);
 
             return Completable.complete();
         });
@@ -77,7 +76,7 @@ class LongPollingTransport implements Transport {
             return pollingCompletable;
         } else {
             logger.info("Long Polling transport polling complete.");
-            this.onClose.invoke(this.closeError);
+            pollCompletableSubject.onComplete();
         }
 
         return Completable.complete();
@@ -108,9 +107,11 @@ class LongPollingTransport implements Transport {
     public Completable stop() {
         this.active = false;
         this.pollingClient.delete(this.url);
-        this.pollCompletable.blockingAwait();
-        logger.info("LongPolling transport stopped.");
-        this.onClose.invoke(null);
-        return Completable.complete();
+        CompletableSubject stopCompletableSubject = CompletableSubject.create();
+        return this.pollCompletableSubject.andThen(Completable.defer(() -> {
+            logger.info("LongPolling transport stopped.");
+            this.onClose.invoke(this.closeError);
+            return Completable.complete();
+        })).subscribeWith(stopCompletableSubject);
     }
 }
