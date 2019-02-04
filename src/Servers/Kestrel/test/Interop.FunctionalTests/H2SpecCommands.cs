@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Xml;
 using Microsoft.Extensions.Logging;
+using Xunit;
 
 namespace Interop.FunctionalTests
 {
@@ -169,30 +170,50 @@ namespace Interop.FunctionalTests
             return false;
         }
 
-        public static async Task RunTest(string testId, int port, bool https, ILogger logger)
+        public static void RunTest(string testId, int port, bool https, ILogger logger)
         {
             var tempFile = Path.GetTempPath() + Guid.NewGuid() + ".xml";
-            var processOptions = new ProcessStartInfo
+            using (var process = new Process())
             {
-                FileName = GetToolLocation(),
-                RedirectStandardOutput = true,
-                Arguments = $"{testId} -p {port.ToString(CultureInfo.InvariantCulture)} --strict -j {tempFile} --timeout {TimeoutSeconds}"
-                    + (https ? " --tls --insecure" : ""),
-                WindowStyle = ProcessWindowStyle.Hidden,
-                CreateNoWindow = true,
-            };
+                process.StartInfo.FileName = GetToolLocation();
+                process.StartInfo.RedirectStandardOutput = true;
+                process.StartInfo.RedirectStandardError = true;
+                process.StartInfo.Arguments = $"{testId} -p {port.ToString(CultureInfo.InvariantCulture)} --strict -j {tempFile} --timeout {TimeoutSeconds}"
+                    + (https ? " --tls --insecure" : "");
+                process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                process.StartInfo.CreateNoWindow = true;
 
-            using (var process = Process.Start(processOptions))
-            {
-                var dataTask = process.StandardOutput.ReadToEndAsync();
-
-                if (await Task.WhenAny(dataTask, Task.Delay(TimeSpan.FromSeconds(TimeoutSeconds * 2))) != dataTask)
+                process.OutputDataReceived += (_, args) =>
                 {
+                    if (!string.IsNullOrEmpty(args.Data))
+                    {
+                        logger.LogDebug(args.Data);
+                    }
+                };
+                process.ErrorDataReceived += (_, args) =>
+                {
+                    if (!string.IsNullOrEmpty(args.Data))
+                    {
+                        logger.LogError(args.Data);
+                    }
+                };
+
+                Assert.True(process.Start());
+                process.BeginOutputReadLine(); // Starts OutputDataReceived
+                process.BeginErrorReadLine(); // Starts ErrorDataReceived
+
+                if (!process.WaitForExit(1000 * TimeoutSeconds))
+                {
+                    try
+                    {
+                        process.Kill();
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new TimeoutException($"h2spec didn't exit within {TimeoutSeconds * 2} seconds.", ex);
+                    }
                     throw new TimeoutException($"h2spec didn't exit within {TimeoutSeconds * 2} seconds.");
                 }
-
-                var data = await dataTask;
-                logger.LogDebug(data);
 
                 var results = File.ReadAllText(tempFile);
                 File.Delete(tempFile);

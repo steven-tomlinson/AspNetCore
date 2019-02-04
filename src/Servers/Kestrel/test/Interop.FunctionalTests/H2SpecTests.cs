@@ -23,7 +23,7 @@ namespace Interop.FunctionalTests
         SkipReason = "Missing Windows ALPN support: https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation#Support")]
     public class H2SpecTests : LoggedTest
     {
-        [ConditionalTheory(Skip = "Skipped while debugging https://github.com/aspnet/AspNetCore-Internal/issues/1720")]
+        [ConditionalTheory]
         [MemberData(nameof(H2SpecTestCases))]
         public async Task RunIndividualTestCase(H2SpecTestCase testCase)
         {
@@ -46,7 +46,7 @@ namespace Interop.FunctionalTests
             {
                 await host.StartAsync();
 
-                await H2SpecCommands.RunTest(testCase.Id, host.GetPort(), testCase.Https, Logger);
+                H2SpecCommands.RunTest(testCase.Id, host.GetPort(), testCase.Https, Logger);
 
                 await host.StopAsync();
             }
